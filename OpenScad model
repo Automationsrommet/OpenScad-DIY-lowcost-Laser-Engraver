@@ -1,0 +1,77 @@
+// parametric laser engraver for 500mW ultraviolet laser
+//Not yet built nor tested. Wooden solid frame, ballbearings as wheels
+//NEMA 14 used steppers with no drivers. My polargraph already does this with 2 steppers. Then the mirrored paires in serial should work, I hope. Probably wont be fast though. 
+//Im thinking arduino uno perhaps without bootloader.
+
+//Input parameters
+length=800;
+depth=600;
+stock=50;
+bearingdia=22;
+bearinghole=7;
+bearingwidth=8;
+xframe=170;
+xcarr=150;
+motor=35.8;
+motorxz=106;
+motoryz=55;
+
+module actualbearing(){
+    cylinder(motor+bearingwidth,1.5,2,center=true);
+    difference(){cylinder(bearingwidth,bearingdia/2,bearingdia/2,center=true);
+        cylinder(bearingwidth*2,bearinghole/2,bearinghole/2,center=true);
+}}
+module frame(){
+    for (i=[-1:2:1]){
+        difference(){
+color("pink")translate([0,i*(depth/2-stock/2),0])cube([length,stock,stock],center=true);
+            color("green")translate([0,i*(depth/2-stock/2),stock/2])cube([length+1,bearingwidth,6],center=true);
+        }
+color("white")translate([i*(length/2-stock/2),0,0])cube([stock,depth-2*stock,stock],center=true);
+        }}
+module xframe(){
+    for (i=[-1:2:1]){
+color("red")translate([0,i*(depth/2-stock-bearingwidth/2-1),stock+3])cube([xframe-2*stock,stock,stock],center=true);
+        difference(){
+color("white")translate([i*(xframe/2-stock/2),0,stock+3])cube([stock,depth-stock-bearingwidth-2,stock],center=true);
+            color("green")translate([i*(xframe/2-stock/2),0,stock/2+stock+3])cube([bearingwidth,depth,6],center=true);
+        }}}
+module xcart(){
+    rotate([0,0,90])for (i=[-1:2:1]){
+color("red")translate([0,i*(xframe/2-stock*0.75-bearingwidth/2-1),2*stock+6])cube([xcarr-2*stock,stock/2,stock],center=true);        
+color("white")translate([i*(xcarr/2-stock/2),0,2*stock+6])cube([stock,xframe-stock-bearingwidth-2,stock],center=true);            
+        }}
+module bearings(){
+    for (i=[-1:2:1]){
+        for (j=[-1:2:1]){
+            for (k=[0:1:1]){
+        color("orange")translate([j*(xframe/2-bearingdia/2),i*(depth/2-stock/2),stock/2+bearingdia/2-2])rotate([90,90,0])actualbearing();
+               color("cyan")translate([j*(motor/2+4),i*(depth/2-stock/2),motoryz+4])rotate([90,90,0])actualbearing();
+             color("yellow")translate([i*(xframe/2-stock/2),j*(xcarr/2-bearingdia/2),1.5*stock+bearingdia/2])rotate([90,90,90])actualbearing();
+             color("pink")translate([i*(xframe/2-stock/2),j*(motor/2+4),motorxz+4])rotate([90,90,90])actualbearing();   
+        }}}}
+module motors(){
+    for (i=[-1:2:1]){
+    rotate([0,0,90])translate([0,(i*(xframe-stock-bearingwidth-2)/2-motor/2*i+i ), motorxz]){color("gray")cube([motor,motor,motor],center=true);
+        color("red")translate([0,i*motor/5, 0])rotate([90,90,0])cylinder(motor*1.5,2,2,center=true); }
+       translate([0,i*(depth/2-stock-bearingwidth/2+7),motoryz]){color("gray")cube([motor,motor,motor],center=true);
+        color("red")translate([0,i*motor/5, 0])rotate([90,90,0])cylinder(motor*1.5,2,2,center=true); } 
+}}
+module endstop(){
+    for (i=[-1:2:1]){
+    difference(){
+    intersection(){cube([40,5,30],center=true);translate([0,0,-25])rotate([0,45,0])cube([60,10,60],center=true);}
+    translate([i*10,0,-10])rotate([0,90,90])cylinder(60,3,3,center=true);
+}}}
+module endstops(){
+    for (i=[-1:2:1]){
+        for (j=[-1:2:1]){
+   translate([j*(xframe/2-stock/2),i*(depth/2-stock/2-2),stock+motor/2+15])endstop();
+   rotate([0,0,90])translate([j*(depth/2-stock/2),i*(length/2+2.5),stock/2+5])endstop();
+}}}
+frame();
+difference(){xframe(); motors(); bearings();}
+intersection(){rotate([45,0,0])cube(240,center=true);  difference(){xcart(); motors(); bearings();}}
+bearings();
+motors();
+endstops();
